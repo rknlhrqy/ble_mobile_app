@@ -9,6 +9,7 @@ import {
   Platform
 } from 'react-native';
 import { inject, observer } from 'mobx-react';
+import { bytesToString } from 'convert-string';
 
 import { WebPage } from '../config/config';
 import Log from '../utils/Log';
@@ -28,6 +29,7 @@ export default class Dashboard extends Component implements UUIDsInterface {
     peripherals: new Map(),
     connectedDevice: null,
     page: WebPage.BleModuleList,
+    ecuStatus: false,
   };
 
   constructor(props) {
@@ -39,6 +41,7 @@ export default class Dashboard extends Component implements UUIDsInterface {
       rowHasChanged: (r1, r2) => r1 !== r2});
 
     this.startScan = async () => {
+      Log.out('BleManagerStartScan');
       if (!this.state.scanning) {
         try {
           this.setState({scanning: true});
@@ -50,7 +53,7 @@ export default class Dashboard extends Component implements UUIDsInterface {
     };
 
     this.handleUpdateState = (args) => {
-      console.log('BleManagerDidUpdateState:', args);
+      Log.out('BleManagerDidUpdateState:' + args);
       this.BleModule.bluetoothState = args.state;
       // When BLE is enabled, it starts the search automatically.
       if(args.state == 'on'){
@@ -59,12 +62,12 @@ export default class Dashboard extends Component implements UUIDsInterface {
     };
 
     this.handleStopScan = () => {
-        console.log('BleManagerStopScan:','Scanning is stopped');
+        Log.out('BleManagerStopScan: Scanning is stopped');
         this.setState({scaning: false});
     };
 
     this.handleDiscoverPeripheral = (peripheral) => {
-        console.log(peripheral.id, peripheral.name);
+        Log.out('Discover ' + peripheral.id + ' ' + peripheral.name);
         let id;  //BLE Peripheral id
         let macAddress;  //BLE MAC macAddress
         if(Platform.OS == 'android'){
@@ -85,15 +88,18 @@ export default class Dashboard extends Component implements UUIDsInterface {
     };
 
     this.handleConnectPeripheral = (args) => {
-        console.log('BleManagerConnectPeripheral:', args);
+        Log.out('BleManagerConnectPeripheral:' + args);
     };
 
     this.handleDisconnectPeripheral = (args) => {
         console.log('BleManagerDisconnectPeripheral:', args);
     };
 
-    this.handleUpdateValue = (data) => {
-        console.log('BluetoothUpdateValue', value);
+    this.handleUpdateValue = ({ value, peripheral, characteristic, service }) => {
+        // console.log('BluetoothUpdateValue', value);
+        const str = bytesToString(value);
+        Log.out('BluetoothUpdateValue: ' + characteristic + ' ' + str);
+        this.setState({ecuStatus: str});
     };
   }
 
@@ -106,7 +112,9 @@ export default class Dashboard extends Component implements UUIDsInterface {
       this.discoverPeripheralListener = this.BleModule.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral);
       this.connectPeripheralListener = this.BleModule.addListener('BleManagerConnectPeripheral', this.handleConnectPeripheral);
       this.disconnectPeripheralListener = this.BleModule.addListener('BleManagerDisconnectPeripheral', this.handleDisconnectPeripheral);
+      /*
       this.updateValueListener = this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValue);
+      */
     }catch(error){
       throw new Error(error);
     }
@@ -142,7 +150,7 @@ export default class Dashboard extends Component implements UUIDsInterface {
   }
 
   connect = async (peripheral) => {
-    Log.out('Connect to Peripheral: ' + peripheral.name);
+    // Log.out('Connect to Peripheral: ' + peripheral.name);
     try {
       await this.BleModule.stopScan();
       this.setState({
@@ -164,12 +172,34 @@ export default class Dashboard extends Component implements UUIDsInterface {
      * 参数：(peripheralId, serviceUUID, characteristicUUID, data, maxByteSize)
      * Write with response to the specified characteristic, you need to call retrieveServices method before.
      * */
-	write = async (serviceUUID, characteristicUUID, data) => {
+	writeAndEnableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
     try {
-      await this.BleModule.write(serviceUUID, characteristicUUID, data);
+      await this.BleModule.startNotification(serviceUUID, notifyCharacteristicUUID);
+      this.updateValueListener = await this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValue);
+      await this.BleModule.write(serviceUUID, writeCharacteristicUUID, data);
       Log.out('Write success: ' + data.toString());
     } catch (error) {
       Log.out('Write failed: ' + data);
+      throw new Error(error);
+    }
+  }
+
+  startNotification = async (serviceUUID, characteristicUUID) => {
+    try {
+      await this.BleModule.startNotification(serviceUUID, characteristicUUID);
+      Log.out('Start Notification success');
+    } catch (error) {
+      Log.out('Start Notification failed');
+      throw new Error(error);
+    }
+  }
+
+  stopNotification = async (serviceUUID, characteristicUUID) => {
+    try {
+      await this.BleModule.stopNotification(serviceUUID, characteristicUUID);
+      // Log.out('Stop Notification success');
+    } catch (error) {
+      // Log.out('Stop Notification failed');
       throw new Error(error);
     }
   }
@@ -197,7 +227,12 @@ export default class Dashboard extends Component implements UUIDsInterface {
       return (<BLEModuleList data={list} onConnect={this.connect} />);
     } else if (this.state.page === WebPage.ECUInit) {
       Log.out('get ECUInit');
-      return (<ECUInit onSubmit={this.write} />);
+      return (
+        <View>
+        <ECUInit onSubmit={this.writeAndEnableNotify} ecuStatus={this.state.ecuStatus}/>
+        <View><Text>ECU status: {this.state.ecuStatus}!</Text></View>
+        </View>
+      );
     } else if (this.state.page === WebPage.EEN) {
       Log.out('get EEN');
       return (<EEN />);

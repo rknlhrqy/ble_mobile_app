@@ -111,13 +111,31 @@ export default class BLEModule {
     });
   };
 
-	write = async (serviceUUID, characteristicUUID, data) => {
+	write = (serviceUUID, characteristicUUID, data) => {
     const dataBytes = stringToBytes(data);
     BleManager.write(this.peripheralId, serviceUUID, characteristicUUID, dataBytes, MAX_BYTE_SIZE).then(() => {
       Log.out('Write success');
     }).catch((error) => {
       Log.out('Write failed');
       throw new Error(error);
+    });
+  }
+
+  startNotification = (serviceUUID, characteristicUUID) => {
+    BleManager.startNotification(this.peripheralId, serviceUUID, characteristicUUID).then(() => {
+      Log.out('Start Notification success');
+    }).catch((error) => {
+      Log.out('Start Notification error');
+      throw new Error(error);
+    });
+  }
+
+  stopNotification = (serviceUUID, characteristicUUID) => {
+    BleManager.stopNotification(this.peripheralId, serviceUUID, characteristicUUID).then(() => {
+      Log.out('Stop Notification success!');
+    }).catch((error) => {
+      Log.out('Stop Notification error');
+      throw new Error(errro);
     });
   }
 
@@ -173,8 +191,8 @@ export default class BLEModule {
       item.characteristic = this.fullUUID(item.characteristic);
       if(Platform.OS == 'android'){
         if(item.properties.Notify == 'Notify'){
-          this.ServiceStore.AddNofityServiceUUID(item.service);
-          this.ServiceStore.AddNofityCharacteristicUUID(item.characteristic);
+          this.ServiceStore.AddNotifyServiceUUID(item.service);
+          this.ServiceStore.AddNotifyCharacteristicUUID(item.characteristic);
         }
         if(item.properties.Read == 'Read'){
           this.ServiceStore.AddReadServiceUUID(item.service);

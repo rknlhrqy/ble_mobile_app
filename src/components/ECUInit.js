@@ -14,7 +14,7 @@ import { inject, observer } from 'mobx-react';
 import {
   ECUInitServiceUUID,
   ECUInitCharacteristicUUID,
-  ECNStatusCharacteristicUUID
+  ECUStatusCharacteristicUUID
 } from '../config/config';
 
 import Log from '../utils/Log';
@@ -26,7 +26,6 @@ export default class ECUInit extends Component {
     sn: 'ESN123',
     mn: 'EMN1122',
     pn: 'EPN333333',
-    ecn: false,
   };
 
   constructor(props) {
@@ -38,12 +37,17 @@ export default class ECUInit extends Component {
     const data = _.pick(this.state, ['sn', 'mn', 'pn']);
     const data_str = JSON.stringify(data);
     Log.out('Write:' + data_str);
-    const indexService = this.props.ServiceStore.writeWithResponseServiceUUID.indexOf(ECUInitServiceUUID);
-    const indexCharacteristic = this.props.ServiceStore.writeWithResponseCharacteristicUUID.indexOf(ECUInitCharacteristicUUID);
+    const indexWriteService = this.props.ServiceStore.writeWithResponseServiceUUID.indexOf(ECUInitServiceUUID);
+    const indexWriteCharacteristic = this.props.ServiceStore.writeWithResponseCharacteristicUUID.indexOf(ECUInitCharacteristicUUID);
 
-    if (indexService !== -1 && indexCharacteristic !== -1) {
+    const indexNotifyService = this.props.ServiceStore.notifyServiceUUID.indexOf(ECUInitServiceUUID);
+    const indexNotifyCharacteristic = this.props.ServiceStore.notifyCharacteristicUUID.indexOf(ECUStatusCharacteristicUUID);
+
+    if (indexWriteService !== -1 && indexWriteCharacteristic !== -1 &&
+        indexNotifyService !== -1 && indexNotifyCharacteristic !== -1
+    ) {
       Log.out('Send to EEN');
-      this.props.onSubmit(ECUInitServiceUUID, ECUInitCharacteristicUUID, data_str);
+      this.props.onSubmit(ECUInitServiceUUID, ECUInitCharacteristicUUID, ECUStatusCharacteristicUUID, data_str);
     }
   };
 
@@ -70,7 +74,7 @@ export default class ECUInit extends Component {
             <Text style={{fontSize: 15, textAlign: 'center', color: '#fff', padding: 15, marginTop: 5}}>Submit</Text>
           </View>
         </TouchableHighlight>
-        <Text>ECN Started?{this.state.ecn}</Text>
+        <Text>ECN Started? {this.props.ecuStatus}</Text>
       </View>
     );
   }
@@ -78,7 +82,7 @@ export default class ECUInit extends Component {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        // flex: 1,
         backgroundColor:'white',
         marginTop:Platform.OS == 'ios'?20:0,
     },
