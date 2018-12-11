@@ -7,7 +7,7 @@
  */
 
 import React, {Component} from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import Log from './utils/Log';
 import CMMAHeader from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -24,6 +24,7 @@ export default class App extends Component<Props> {
       <View style={styles.container}>
         <CMMAHeader />
         <Dashboard />
+        <Log />
       </View>
     );
   }
@@ -33,5 +34,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5FCFF',
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
   },
 });

@@ -4,7 +4,6 @@ import {
   Text,
   TouchableHighlight,
   StyleSheet,
-  ListView,
   ScrollView,
   Platform
 } from 'react-native';
@@ -38,9 +37,6 @@ export default class Dashboard extends Component implements UUIDsInterface {
     super(props);
     debugger;
     this.setState.scanning = false;
-
-    this.ds = new ListView.DataSource({
-      rowHasChanged: (r1, r2) => r1 !== r2});
 
     this.startScan = async () => {
       Log.out('BleManagerStartScan');
@@ -98,7 +94,6 @@ export default class Dashboard extends Component implements UUIDsInterface {
     };
 
     this.handleUpdateValue = ({ value, peripheral, characteristic, service }) => {
-        // console.log('BluetoothUpdateValue', value);
         const str = bytesToString(value);
         Log.out('BluetoothUpdateValue: ' + characteristic + ' ' + str);
         this.setState({ecuStatus: str});
@@ -176,11 +171,6 @@ export default class Dashboard extends Component implements UUIDsInterface {
   };
 
 
-	/**
-     * 写数据到蓝牙
-     * 参数：(peripheralId, serviceUUID, characteristicUUID, data, maxByteSize)
-     * Write with response to the specified characteristic, you need to call retrieveServices method before.
-     * */
 	writeAndEnableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
     try {
       Log.out('startNotification');
@@ -198,57 +188,6 @@ export default class Dashboard extends Component implements UUIDsInterface {
       throw new Error(error);
     }
   }
-     /*
-	writeAndEnableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
-    try {
-      await this.enableNotify(serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID);
-
-      Log.out('write: ' + data.toString());
-      await this.BleModule.write(serviceUUID, writeCharacteristicUUID, data);
-
-      Log.out('Write success: ' + data.toString());
-    } catch (error) {
-      Log.out('Write failed: ' + data.toString());
-      throw new Error(error);
-    }
-  };
-
-  enableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID) => {
-    try {
-      Log.out('startNotification');
-      await this.BleModule.startNotification(serviceUUID, notifyCharacteristicUUID);
-
-      Log.out('Listener for handleUpdateValue');
-      this.updateValueListener = await this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValue);
-      Log.out('StartNotification success');
-    } catch (error) {
-      Log.out('StartNotification failed');
-      throw new Error(error);
-    }
-  };
-
-  */
-/*
-  startNotification = async (serviceUUID, characteristicUUID) => {
-    try {
-      await this.BleModule.startNotification(serviceUUID, characteristicUUID);
-      Log.out('Start Notification success');
-    } catch (error) {
-      Log.out('Start Notification failed');
-      throw new Error(error);
-    }
-  }
-
-  stopNotification = async (serviceUUID, characteristicUUID) => {
-    try {
-      await this.BleModule.stopNotification(serviceUUID, characteristicUUID);
-      // Log.out('Stop Notification success');
-    } catch (error) {
-      // Log.out('Stop Notification failed');
-      throw new Error(error);
-    }
-  }
-*/
 	writeAndEnableNotifyEEN = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
     try {
       Log.out('startNotification');
