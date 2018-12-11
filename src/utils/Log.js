@@ -8,20 +8,23 @@ import {
 } from 'react-native';
 
 export default class Log extends Component {
+  static startTime = new Date().getTime()/1000;
+
   static logStr = [
     {text: 'Log starts'},
   ];
 
   static out(str) {
+    const t = new Date().getTime()/1000 - Log.startTime;
     const log = {
-      text: str,
+      text: t.toFixed(3).toString() + ': ' + str,
     }
     Log.logStr.push(log);
   }
 
   renderItem = (item) => {
     return (
-       <Text style={styles.row}>log: {item.item.text}</Text>
+       <Text style={styles.row}>{item.item.text}</Text>
     );
   }
 

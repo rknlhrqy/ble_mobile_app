@@ -17,6 +17,7 @@ import Log from '../utils/Log';
 import BLEModule from '../BLEModule';
 import UUIDs from '../data_model/UUIDs';
 import ECUInit from './ECUInit';
+import EEN from './EEN';
 import BLEModuleList from './BLEModuleList';
 
 @inject(['ServiceStore'])
@@ -30,6 +31,7 @@ export default class Dashboard extends Component implements UUIDsInterface {
     connectedDevice: null,
     page: WebPage.BleModuleList,
     ecuStatus: false,
+    eenParams: '',
   };
 
   constructor(props) {
@@ -101,6 +103,13 @@ export default class Dashboard extends Component implements UUIDsInterface {
         Log.out('BluetoothUpdateValue: ' + characteristic + ' ' + str);
         this.setState({ecuStatus: str});
     };
+
+    this.handleUpdateEENValue = ({ value, peripheral, characteristic, service }) => {
+        const str = bytesToString(value);
+        Log.out('BluetoothUpdateValue: ' + characteristic + ' ' + str);
+        this.setState({eenParams: str});
+    };
+
   }
 
   async componentWillMount() {
@@ -174,16 +183,52 @@ export default class Dashboard extends Component implements UUIDsInterface {
      * */
 	writeAndEnableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
     try {
+      Log.out('startNotification');
       await this.BleModule.startNotification(serviceUUID, notifyCharacteristicUUID);
-      this.updateValueListener = await this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValue);
-      await this.BleModule.write(serviceUUID, writeCharacteristicUUID, data);
+
+      Log.out('Listener for handleUpdateValue');
+      this.updateValueListener =  this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValue);
+
+      Log.out('write: ' + data.toString());
+      await this.BleModule.writeWithoutResponse(serviceUUID, writeCharacteristicUUID, data);
+
       Log.out('Write success: ' + data.toString());
     } catch (error) {
-      Log.out('Write failed: ' + data);
+      Log.out('Write failed: ' + data.toString());
       throw new Error(error);
     }
   }
+     /*
+	writeAndEnableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
+    try {
+      await this.enableNotify(serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID);
 
+      Log.out('write: ' + data.toString());
+      await this.BleModule.write(serviceUUID, writeCharacteristicUUID, data);
+
+      Log.out('Write success: ' + data.toString());
+    } catch (error) {
+      Log.out('Write failed: ' + data.toString());
+      throw new Error(error);
+    }
+  };
+
+  enableNotify = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID) => {
+    try {
+      Log.out('startNotification');
+      await this.BleModule.startNotification(serviceUUID, notifyCharacteristicUUID);
+
+      Log.out('Listener for handleUpdateValue');
+      this.updateValueListener = await this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValue);
+      Log.out('StartNotification success');
+    } catch (error) {
+      Log.out('StartNotification failed');
+      throw new Error(error);
+    }
+  };
+
+  */
+/*
   startNotification = async (serviceUUID, characteristicUUID) => {
     try {
       await this.BleModule.startNotification(serviceUUID, characteristicUUID);
@@ -203,6 +248,48 @@ export default class Dashboard extends Component implements UUIDsInterface {
       throw new Error(error);
     }
   }
+*/
+	writeAndEnableNotifyEEN = async (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
+    try {
+      Log.out('startNotification');
+      await this.BleModule.startNotification(serviceUUID, notifyCharacteristicUUID);
+
+      Log.out('Listener for handleUpdateValue');
+      this.updateValueListener =  this.BleModule.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateEENValue);
+
+      Log.out('write: ' + data.toString());
+      await this.BleModule.writeWithoutResponse(serviceUUID, writeCharacteristicUUID, data);
+
+      Log.out('Write success: ' + data.toString());
+    } catch (error) {
+      Log.out('Write failed: ' + data.toString());
+      throw new Error(error);
+    }
+  };
+
+  getEEN = (serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data) => {
+    Log.out('Get EEN Parameters');
+    this.writeAndEnableNotifyEEN(serviceUUID, writeCharacteristicUUID, notifyCharacteristicUUID, data);
+    this.setState({
+      page: WebPage.EEN,
+    });
+  };
+
+
+  renderEENData = (strInput) => {
+    let data = [];
+    const str = strInput.slice();
+    if (str.length !== 0) {
+      Log.out(str);
+      const data_str = str.replace('{', '').replace('}', '').split(',');
+      Log.out(data_str);
+      data = data_str.map(each => {
+        return({text: each});
+      });
+      Log.out(data);
+    }
+    return data;
+  };
 
   renderPage = (list) => {
     Log.out('this.state.page: ' + this.state.page);
@@ -228,14 +315,14 @@ export default class Dashboard extends Component implements UUIDsInterface {
     } else if (this.state.page === WebPage.ECUInit) {
       Log.out('get ECUInit');
       return (
-        <View>
-        <ECUInit onSubmit={this.writeAndEnableNotify} ecuStatus={this.state.ecuStatus}/>
-        <View><Text>ECU status: {this.state.ecuStatus}!</Text></View>
-        </View>
+        <ECUInit
+          onSubmit={this.writeAndEnableNotify}
+          onGetEEN={this.getEEN}
+          ecuStatus={this.state.ecuStatus}/>
       );
     } else if (this.state.page === WebPage.EEN) {
-      Log.out('get EEN');
-      return (<EEN />);
+      Log.out('get EEN: ' + this.state.eenParams);
+      return (<EEN eenParams={this.renderEENData(this.state.eenParams)}/>);
     } else {
       Log.out('get Null');
       return null;

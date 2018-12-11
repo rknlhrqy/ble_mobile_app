@@ -24,7 +24,6 @@ export default class App extends Component<Props> {
       <View style={styles.container}>
         <CMMAHeader />
         <Dashboard />
-        <Log />
       </View>
     );
   }

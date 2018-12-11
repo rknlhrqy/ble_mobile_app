@@ -41,6 +41,7 @@ export default class BLEModule {
     BleManager.checkState();
   }
 
+/*
   scan = () => {
     BleManager.scan([], SCAN_DURATION, false)
       .then(() => {
@@ -50,7 +51,19 @@ export default class BLEModule {
         Log.out('Scan started fail');
       });
   };
+*/
 
+  scan = () => {
+    return new Promise((resolve, reject) => {
+      BleManager.scan([], SCAN_DURATION, false).then(() => {
+        Log.out('Scan started');
+        resolve();
+      }).catch((err)=>{
+        Log.out('Scan started fail');
+        reject(err);
+      });
+    });
+  };
 /*
   scan = () => {
     return new Promise((resolve, reject) => {
@@ -111,6 +124,7 @@ export default class BLEModule {
     });
   };
 
+/*
 	write = (serviceUUID, characteristicUUID, data) => {
     const dataBytes = stringToBytes(data);
     BleManager.write(this.peripheralId, serviceUUID, characteristicUUID, dataBytes, MAX_BYTE_SIZE).then(() => {
@@ -120,13 +134,52 @@ export default class BLEModule {
       throw new Error(error);
     });
   }
+  */
+  write = (serviceUUID, characteristicUUID, data) => {
+    const dataBytes = stringToBytes(data);
+    return new Promise((resolve, reject) => {
+      BleManager.write(this.peripheralId, serviceUUID, characteristicUUID, dataBytes, MAX_BYTE_SIZE).then(() => {
+        Log.out('Write success');
+        resolve();
+      }).catch((error) => {
+        Log.out('Write failed');
+        reject(error);
+      });
+    });
+  }
 
+  writeWithoutResponse = (serviceUUID, characteristicUUID, data) => {
+    const dataBytes = stringToBytes(data);
+    return new Promise((resolve, reject) => {
+      BleManager.writeWithoutResponse(this.peripheralId, serviceUUID, characteristicUUID, dataBytes, MAX_BYTE_SIZE).then(() => {
+        Log.out('writeWithoutResponse success');
+        resolve();
+      }).catch((error) => {
+        Log.out('writeWithoutResponse failed');
+        reject(error);
+      });
+    });
+  }
+/*
   startNotification = (serviceUUID, characteristicUUID) => {
     BleManager.startNotification(this.peripheralId, serviceUUID, characteristicUUID).then(() => {
       Log.out('Start Notification success');
     }).catch((error) => {
       Log.out('Start Notification error');
       throw new Error(error);
+    });
+  }
+*/
+  startNotification = (serviceUUID, characteristicUUID) => {
+    // Must return Promise. So that async/await works on this function.
+    return new Promise((resolve, reject) => {
+      BleManager.startNotification(this.peripheralId, serviceUUID, characteristicUUID).then(() => {
+        Log.out('Start Notification success');
+        resolve();
+      }).catch((error) => {
+        Log.out('Start Notification error');
+        reject(error);
+      });
     });
   }
 

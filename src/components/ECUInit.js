@@ -14,7 +14,10 @@ import { inject, observer } from 'mobx-react';
 import {
   ECUInitServiceUUID,
   ECUInitCharacteristicUUID,
-  ECUStatusCharacteristicUUID
+  ECUStatusCharacteristicUUID,
+  EENServiceUUID,
+  EENGetParametersCharacteristicUUID,
+  EENParametersCharacteristicUUID
 } from '../config/config';
 
 import Log from '../utils/Log';
@@ -37,8 +40,13 @@ export default class ECUInit extends Component {
     const data = _.pick(this.state, ['sn', 'mn', 'pn']);
     const data_str = JSON.stringify(data);
     Log.out('Write:' + data_str);
+    /*
     const indexWriteService = this.props.ServiceStore.writeWithResponseServiceUUID.indexOf(ECUInitServiceUUID);
     const indexWriteCharacteristic = this.props.ServiceStore.writeWithResponseCharacteristicUUID.indexOf(ECUInitCharacteristicUUID);
+
+    */
+    const indexWriteService = this.props.ServiceStore.writeWithoutResponseServiceUUID.indexOf(ECUInitServiceUUID);
+    const indexWriteCharacteristic = this.props.ServiceStore.writeWithoutResponseCharacteristicUUID.indexOf(ECUInitCharacteristicUUID);
 
     const indexNotifyService = this.props.ServiceStore.notifyServiceUUID.indexOf(ECUInitServiceUUID);
     const indexNotifyCharacteristic = this.props.ServiceStore.notifyCharacteristicUUID.indexOf(ECUStatusCharacteristicUUID);
@@ -47,9 +55,48 @@ export default class ECUInit extends Component {
         indexNotifyService !== -1 && indexNotifyCharacteristic !== -1
     ) {
       Log.out('Send to EEN');
+      Log.out('ECUStatusCharacteristicUUID: ' + ECUStatusCharacteristicUUID);
       this.props.onSubmit(ECUInitServiceUUID, ECUInitCharacteristicUUID, ECUStatusCharacteristicUUID, data_str);
+    } else {
+      Log.out('Wrong UUIDs');
+      Log.out('ECUInitServiceUUID: ' + ECUInitServiceUUID);
+      Log.out('ECUInitCharacteristicUUID: ' + ECUInitCharacteristicUUID);
+      Log.out('ECUStatusCharacteristicUUID: ' + ECUStatusCharacteristicUUID);
     }
   };
+
+  getEENParameters = () => {
+    const data_str = "true"
+    Log.out('Write:' + data_str);
+    const indexWriteService = this.props.ServiceStore.writeWithoutResponseServiceUUID.indexOf(EENServiceUUID);
+    const indexWriteCharacteristic = this.props.ServiceStore.writeWithoutResponseCharacteristicUUID.indexOf(EENGetParametersCharacteristicUUID);
+
+    const indexNotifyService = this.props.ServiceStore.notifyServiceUUID.indexOf(EENServiceUUID);
+    const indexNotifyCharacteristic = this.props.ServiceStore.notifyCharacteristicUUID.indexOf(EENParametersCharacteristicUUID);
+
+    if (indexWriteService !== -1 && indexWriteCharacteristic !== -1 &&
+        indexNotifyService !== -1 && indexNotifyCharacteristic !== -1
+    ) {
+      this.props.onGetEEN(EENServiceUUID, EENGetParametersCharacteristicUUID, EENParametersCharacteristicUUID, data_str);
+    } else {
+      Log.out('Wrong UUIDs');
+      Log.out('EENServiceUUID: ' + EENServiceUUID);
+      Log.out('EENGetParametersCharacteristicUUID: ' + EENGetParametersCharacteristicUUID);
+      Log.out('EENParametersCharacteristicUUID: ' + EENParametersCharacteristicUUID);
+    }
+  };
+
+  renderButtonRetrieveEENParams = () => {
+    if (this.props.ecuStatus === 'true') {
+      return (
+        <TouchableHighlight onPress={this.getEENParameters}>
+          <View style={[styles.row, {backgroundColor: '#758be8'}]}>
+            <Text style={{fontSize: 15, textAlign: 'center', color: '#fff', padding: 15, marginTop: 5}}>Get EEN Parameters</Text>
+          </View>
+        </TouchableHighlight>
+      );
+    }
+  }
 
   render() {
     return (
@@ -74,7 +121,8 @@ export default class ECUInit extends Component {
             <Text style={{fontSize: 15, textAlign: 'center', color: '#fff', padding: 15, marginTop: 5}}>Submit</Text>
           </View>
         </TouchableHighlight>
-        <Text>ECN Started? {this.props.ecuStatus}</Text>
+        <Text>ECU Started? {this.props.ecuStatus}</Text>
+        {this.renderButtonRetrieveEENParams()}
       </View>
     );
   }
